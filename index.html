@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust Learning Path — Master Rust dari Nol ke Tingkat Lanjut 🦀</title>
+    <meta name="description" content="Kuasai bahasa pemrograman Rust secara interaktif: Ownership, Borrowing, Structs, Traits, Concurrency, code editor live, dan quiz.">
+    <meta name="theme-color" content="#ea580c">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>">
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter','system-ui','sans-serif'],
+                        mono: ['JetBrains Mono','monospace']
+                    },
+                    colors: {
+                        brand: { 50:'#fff7ed', 100:'#ffedd5', 200:'#fed7aa', 300:'#fdba74', 400:'#fb923c', 500:'#f97316', 600:'#ea580c', 700:'#c2410c', 800:'#9a3412', 900:'#7c2d12' },
+                        surface: { 50:'#f8fafc', 100:'#f1f5f9', 800:'#1e293b', 850:'#172033', 900:'#0f172a', 950:'#0a0f1a' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Markdown & Highlight -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+    <!-- Icons & Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body class="bg-[#0a0f1a] text-slate-200 font-['Inter',sans-serif] antialiased overflow-hidden flex flex-col h-screen">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 glass-header border-b border-white/5 shrink-0">
+        <div class="px-4 max-w-[1600px] mx-auto flex items-center justify-between h-[56px]">
+            <div class="flex items-center gap-3">
+                <button id="menuToggle" class="lg:hidden p-2 rounded-lg hover:bg-white/10 text-slate-300">
+                    <i class="fas fa-bars text-lg"></i>
+                </button>
+                <a href="#" class="flex items-center gap-2.5" onclick="loadLesson(0); return false;">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center font-extrabold text-sm text-white shadow-lg shadow-orange-600/20">🦀</div>
+                    <div>
+                        <div class="font-bold text-sm text-white flex items-center gap-2">Rust Learning Path</div>
+                        <div class="text-[11px] text-slate-400">Interactive Systems Programming</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Global Progress & Links -->
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-2 bg-surface-900/80 px-3 py-1.5 rounded-full border border-white/5">
+                    <span class="text-xs text-slate-400">Progress:</span>
+                    <div class="w-24 h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="progressBar" class="h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <span id="progressText" class="text-xs font-mono font-semibold text-orange-400">0%</span>
+                </div>
+                <a href="https://hub.syamsulbahri.dev" class="text-xs font-medium bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition flex items-center gap-1.5">
+                    <i class="fas fa-arrow-left"></i> Hub Portal
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Body: Sidebar + Main Layout -->
+    <div class="flex flex-1 overflow-hidden relative">
+
+        <!-- Mobile Drawer Overlay -->
+        <div id="drawerBackdrop" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 top-[56px] w-[300px] sm:w-[320px] bg-[#0c1222] border-r border-white/5 z-40 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-200 flex flex-col shrink-0">
+            <!-- Search -->
+            <div class="p-3 border-b border-white/5">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input id="searchInput" type="text" placeholder="Cari pelajaran..." class="w-full bg-surface-900 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500/50">
+                </div>
+            </div>
+
+            <!-- Lessons List -->
+            <div id="lessonsList" class="flex-1 overflow-y-auto p-2 space-y-4">
+                <!-- Injected via JS -->
+            </div>
+        </aside>
+
+        <!-- Main Workspace (Lesson Doc + Interactive Runner) -->
+        <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            
+            <!-- Left: Lesson Content View -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-8 bg-[#0a0f1a] border-r border-white/5">
+                <div class="max-w-3xl mx-auto space-y-6">
+                    <!-- Lesson Meta Header -->
+                    <div class="flex items-center justify-between pb-4 border-b border-white/5 text-xs text-slate-400">
+                        <span id="lessonModule" class="font-medium text-orange-400"></span>
+                        <span id="lessonDuration" class="flex items-center gap-1"><i class="far fa-clock"></i> 15 m</span>
+                    </div>
+
+                    <!-- Markdown Content -->
+                    <article id="lessonContent" class="prose">
+                        <!-- Rendered by Marked.js -->
+                    </article>
+
+                    <!-- Interactive Quiz Box -->
+                    <div id="quizBox" class="mt-8 p-5 rounded-2xl bg-surface-900/90 border border-orange-500/20 space-y-4">
+                        <div class="flex items-center gap-2 text-orange-400 font-semibold text-sm">
+                            <i class="fas fa-circle-question"></i> Quiz Pemahaman
+                        </div>
+                        <p id="quizQuestion" class="text-sm text-slate-200 font-medium"></p>
+                        <div id="quizOptions" class="space-y-2"></div>
+                        <div id="quizResult" class="hidden text-xs font-medium p-3 rounded-lg"></div>
+                    </div>
+
+                    <!-- Navigation Footer -->
+                    <div class="flex items-center justify-between pt-6 border-t border-white/5">
+                        <button id="prevBtn" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 transition flex items-center gap-2">
+                            <i class="fas fa-chevron-left"></i> Sebelumnya
+                        </button>
+                        <button id="nextBtn" class="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-semibold text-white transition flex items-center gap-2 shadow-lg shadow-orange-600/20">
+                            Berikutnya <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Live Code Runner -->
+            <div class="w-full lg:w-[480px] xl:w-[540px] bg-[#0d1424] flex flex-col shrink-0 border-t lg:border-t-0 border-white/5">
+                
+                <!-- Editor Header -->
+                <div class="h-11 px-4 border-b border-white/5 flex items-center justify-between bg-surface-900/60">
+                    <div class="flex items-center gap-2 text-xs font-mono text-slate-400">
+                        <i class="fas fa-code text-orange-400"></i> main.rs
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="resetCodeBtn" class="text-[11px] px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 transition" title="Reset Code">
+                            <i class="fas fa-rotate-left"></i> Reset
+                        </button>
+                        <button id="runCodeBtn" class="btn-brand text-xs font-semibold px-3 py-1 rounded-lg flex items-center gap-1.5 shadow">
+                            <i class="fas fa-play text-[10px]"></i> Run Code
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Code Editor Textarea -->
+                <div class="relative flex-1 bg-[#050811] overflow-hidden flex">
+                    <div id="lineNumbers" class="w-10 bg-[#080d1a] py-3 text-right pr-2 text-xs font-mono text-slate-600 select-none border-r border-white/5">1</div>
+                    <textarea id="codeEditor" spellcheck="false" class="flex-1 bg-transparent text-slate-200 font-mono text-xs p-3 leading-5 resize-none focus:outline-none overflow-auto whitespace-pre"></textarea>
+                </div>
+
+                <!-- Terminal / Console Output -->
+                <div class="h-[180px] bg-[#080c16] border-t border-white/5 flex flex-col">
+                    <div class="px-3 py-1.5 bg-black/40 border-b border-white/5 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                        <span class="flex items-center gap-1.5"><i class="fas fa-terminal text-xs text-slate-500"></i> Output Terminal</span>
+                        <span id="executionStatus" class="text-slate-500">Ready</span>
+                    </div>
+                    <pre id="outputTerminal" class="flex-1 p-3 font-mono text-xs text-slate-300 overflow-y-auto whitespace-pre-wrap leading-relaxed">Klik "Run Code" untuk mengompilasi dan menjalankan program.</pre>
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // State Management
+        let currentLessonIndex = 0;
+        let completedLessons = JSON.parse(localStorage.getItem('rust_completed_lessons') || '[]');
+
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menuToggle');
+        const drawerBackdrop = document.getElementById('drawerBackdrop');
+        const lessonsList = document.getElementById('lessonsList');
+        const searchInput = document.getElementById('searchInput');
+
+        const lessonModule = document.getElementById('lessonModule');
+        const lessonDuration = document.getElementById('lessonDuration');
+        const lessonContent = document.getElementById('lessonContent');
+        const codeEditor = document.getElementById('codeEditor');
+        const lineNumbers = document.getElementById('lineNumbers');
+        const runCodeBtn = document.getElementById('runCodeBtn');
+        const resetCodeBtn = document.getElementById('resetCodeBtn');
+        const outputTerminal = document.getElementById('outputTerminal');
+        const executionStatus = document.getElementById('executionStatus');
+
+        const quizQuestion = document.getElementById('quizQuestion');
+        const quizOptions = document.getElementById('quizOptions');
+        const quizResult = document.getElementById('quizResult');
+
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        // Mobile Menu
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            drawerBackdrop.classList.toggle('hidden');
+        });
+        drawerBackdrop.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            drawerBackdrop.classList.add('hidden');
+        });
+
+        // Line Numbers
+        function updateLineNumbers() {
+            const lines = codeEditor.value.split('\n').length;
+            lineNumbers.innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('<br>');
+        }
+        codeEditor.addEventListener('input', updateLineNumbers);
+        codeEditor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = codeEditor.selectionStart;
+                const end = codeEditor.selectionEnd;
+                codeEditor.value = codeEditor.value.substring(0, start) + "    " + codeEditor.value.substring(end);
+                codeEditor.selectionStart = codeEditor.selectionEnd = start + 4;
+                updateLineNumbers();
+            }
+        });
+
+        // Render Sidebar
+        function renderSidebar(filter = '') {
+            lessonsList.innerHTML = '';
+            MODULES.forEach(mod => {
+                const modLessons = lessons.filter(l => l.moduleId === mod.id && l.title.toLowerCase().includes(filter.toLowerCase()));
+                if (modLessons.length === 0) return;
+
+                const modContainer = document.createElement('div');
+                modContainer.className = 'space-y-1';
+                
+                const header = document.createElement('div');
+                header.className = 'px-3 py-1.5 text-[11px] font-bold tracking-wider uppercase text-slate-400 flex items-center gap-2';
+                header.innerHTML = `<i class="${mod.icon} text-orange-400 text-xs"></i> ${mod.title}`;
+                modContainer.appendChild(header);
+
+                modLessons.forEach(l => {
+                    const idx = lessons.findIndex(x => x.id === l.id);
+                    const isDone = completedLessons.includes(l.id);
+                    const isCurrent = idx === currentLessonIndex;
+
+                    const item = document.createElement('button');
+                    item.className = `w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition ${isCurrent ? 'bg-orange-500/15 text-orange-400 font-semibold border border-orange-500/30' : 'text-slate-300 hover:bg-white/5'}`;
+                    item.innerHTML = `
+                        <span class="truncate pr-2">${l.title}</span>
+                        <i class="fas ${isDone ? 'fa-check-circle text-emerald-400' : 'fa-circle text-slate-700'} text-[11px] shrink-0"></i>
+                    `;
+                    item.addEventListener('click', () => {
+                        loadLesson(idx);
+                        sidebar.classList.add('-translate-x-full');
+                        drawerBackdrop.classList.add('hidden');
+                    });
+                    modContainer.appendChild(item);
+                });
+
+                lessonsList.appendChild(modContainer);
+            });
+        }
+
+        searchInput.addEventListener('input', (e) => renderSidebar(e.target.value));
+
+        // Load Lesson
+        function loadLesson(index) {
+            if (index < 0 || index >= lessons.length) return;
+            currentLessonIndex = index;
+            const l = lessons[index];
+
+            lessonModule.textContent = l.module;
+            lessonDuration.innerHTML = `<i class="far fa-clock"></i> ${l.duration}`;
+            lessonContent.innerHTML = marked.parse(l.content);
+            
+            // Highlight code inside article
+            document.querySelectorAll('#lessonContent pre code').forEach(el => {
+                hljs.highlightElement(el);
+            });
+
+            codeEditor.value = l.defaultCode;
+            updateLineNumbers();
+            outputTerminal.textContent = 'Klik "Run Code" untuk mengompilasi dan menjalankan program.';
+            executionStatus.textContent = 'Ready';
+            executionStatus.className = 'text-slate-500';
+
+            // Quiz
+            renderQuiz(l.quiz);
+
+            // Nav buttons
+            prevBtn.disabled = index === 0;
+            prevBtn.style.opacity = index === 0 ? '0.4' : '1';
+            nextBtn.innerHTML = index === lessons.length - 1 ? 'Selesai 🎉' : 'Berikutnya <i class="fas fa-chevron-right"></i>';
+
+            renderSidebar(searchInput.value);
+            updateProgress();
+        }
+
+        function renderQuiz(quiz) {
+            if (!quiz) {
+                document.getElementById('quizBox').classList.add('hidden');
+                return;
+            }
+            document.getElementById('quizBox').classList.remove('hidden');
+            quizQuestion.textContent = quiz.question;
+            quizOptions.innerHTML = '';
+            quizResult.classList.add('hidden');
+
+            quiz.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-3 rounded-xl bg-surface-850 hover:bg-white/10 text-xs text-slate-300 border border-white/5 transition flex items-center gap-2';
+                btn.innerHTML = `<span class="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center font-mono text-[10px] text-slate-400 shrink-0">${String.fromCharCode(65 + idx)}</span> <span>${opt}</span>`;
+                btn.addEventListener('click', () => {
+                    checkQuiz(idx, quiz.answer);
+                });
+                quizOptions.appendChild(btn);
+            });
+        }
+
+        function checkQuiz(selected, correct) {
+            quizResult.classList.remove('hidden');
+            if (selected === correct) {
+                quizResult.className = 'text-xs font-semibold p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                quizResult.innerHTML = '<i class="fas fa-circle-check mr-1"></i> Benar sekali! Pemahaman konsep Anda sudah tepat.';
+                markLessonCompleted(lessons[currentLessonIndex].id);
+            } else {
+                quizResult.className = 'text-xs font-semibold p-3 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20';
+                quizResult.innerHTML = '<i class="fas fa-circle-xmark mr-1"></i> Kurang tepat. Silakan pelajari kembali materi di atas.';
+            }
+        }
+
+        function markLessonCompleted(id) {
+            if (!completedLessons.includes(id)) {
+                completedLessons.push(id);
+                localStorage.setItem('rust_completed_lessons', JSON.stringify(completedLessons));
+                updateProgress();
+                renderSidebar(searchInput.value);
+            }
+        }
+
+        function updateProgress() {
+            const pct = Math.round((completedLessons.length / lessons.length) * 100);
+            progressBar.style.width = pct + '%';
+            progressText.textContent = pct + '%';
+        }
+
+        // Run Code via Rust Playground API with local fallback
+        runCodeBtn.addEventListener('click', async () => {
+            const code = codeEditor.value;
+            executionStatus.textContent = 'Compiling...';
+            executionStatus.className = 'text-orange-400 animate-pulse';
+            outputTerminal.textContent = '⏳ Mengirim kode ke compiler Rust...';
+
+            try {
+                const res = await fetch('https://play.rust-lang.org/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        channel: 'stable',
+                        mode: 'debug',
+                        edition: '2021',
+                        crateType: 'bin',
+                        tests: false,
+                        code: code
+                    })
+                });
+
+                if (!res.ok) throw new Error('Playground unreachable');
+                const data = await res.json();
+                
+                if (data.success) {
+                    executionStatus.textContent = 'Success (0)';
+                    executionStatus.className = 'text-emerald-400';
+                    outputTerminal.textContent = data.stdout || '(Program selesai tanpa output stdout)';
+                    markLessonCompleted(lessons[currentLessonIndex].id);
+                } else {
+                    executionStatus.textContent = 'Compile Error';
+                    executionStatus.className = 'text-rose-400';
+                    outputTerminal.textContent = data.stderr || 'Terjadi kesalahan saat kompilasi.';
+                }
+            } catch (err) {
+                // Fallback simulation
+                executionStatus.textContent = 'Simulated Output';
+                executionStatus.className = 'text-amber-400';
+                outputTerminal.textContent = `[Offline Mode Fallback]\n` + (lessons[currentLessonIndex].expectedOutput ? `Output: ${lessons[currentLessonIndex].expectedOutput}` : 'Kode berhasil dievaluasi.');
+            }
+        });
+
+        resetCodeBtn.addEventListener('click', () => {
+            codeEditor.value = lessons[currentLessonIndex].defaultCode;
+            updateLineNumbers();
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentLessonIndex > 0) loadLesson(currentLessonIndex - 1);
+        });
+        nextBtn.addEventListener('click', () => {
+            if (currentLessonIndex < lessons.length - 1) loadLesson(currentLessonIndex + 1);
+        });
+
+        // Initialize App
+        loadLesson(0);
+    </script>
+</body>
+</html>
